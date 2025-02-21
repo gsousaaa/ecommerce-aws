@@ -1,4 +1,3 @@
-import { throws } from "assert"
 import { DocumentClient } from "aws-sdk/clients/dynamodb"
 import { v4 } from "uuid"
 
@@ -52,18 +51,37 @@ export class ProductRepository {
 
     async deleteProduct(productId: string): Promise<Product> {
         const data = await this.ddbClient.delete({
-            TableName: this.productsDdb, 
+            TableName: this.productsDdb,
             Key: {
                 id: productId
             },
-            ReturnValues: "ALL_OLD"
+            ReturnValues: "ALL_OLD" // retornar oq existia antes de ser apagado
         }).promise()
 
-       if(!data.Attributes) throw new Error('Product not found')
+        if (!data.Attributes) throw new Error('Product not found')
 
         return data.Attributes as Product
     }
 
-    
+    async updateProduct(productId: string, product: Product): Promise<Product> {
+        const data = await this.ddbClient.update({
+            TableName: this.productsDdb,
+            Key: {
+                id: productId
+            },
+            ConditionExpression: 'attribute_exists(id)',
+            ReturnValues: "UPDATED_NEW", // retornar oq foi alterado
+            UpdateExpression: "set productName = :n, code = :c, price = :p, model = :m",
+            ExpressionAttributeValues: {
+                ":n": product.productName,
+                ":c": product.code,
+                ":p": product.price,
+                ":m": product.model,
+            }
+        }).promise()
 
+        data.Attributes!.id = productId
+
+        return data.Attributes as Product
+    }
 }
