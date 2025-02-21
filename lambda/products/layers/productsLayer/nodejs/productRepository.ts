@@ -34,9 +34,36 @@ export class ProductRepository {
             }
         }).promise()
 
-        if(!response.Item) throw new Error('Produto não encontrado!')
+        if (!response.Item) throw new Error('Produto não encontrado!')
 
         return response.Item as Product
     }
+
+    async createProduct(product: Product): Promise<Product> {
+        product.id = v4()
+
+        await this.ddbClient.put({
+            TableName: this.productsDdb,
+            Item: product
+        }).promise()
+
+        return product
+    }
+
+    async deleteProduct(productId: string): Promise<Product> {
+        const data = await this.ddbClient.delete({
+            TableName: this.productsDdb, 
+            Key: {
+                id: productId
+            },
+            ReturnValues: "ALL_OLD"
+        }).promise()
+
+       if(!data.Attributes) throw new Error('Product not found')
+
+        return data.Attributes as Product
+    }
+
+    
 
 }
