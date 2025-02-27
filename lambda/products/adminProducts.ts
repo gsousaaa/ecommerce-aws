@@ -1,6 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { Product, ProductRepository } from "/opt/nodejs/productsLayer";
 import { DynamoDB } from "aws-sdk"
+import * as AWSXray from "aws-xray-sdk"
+
+AWSXray.captureAWS(require("aws-sdk"))
 
 const productsDdb = process.env.PRODUCTS_DDB!
 const ddbClient = new DynamoDB.DocumentClient()
@@ -25,7 +28,6 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
     if (event.resource === '/products/{id}') {
         const productId = event.pathParameters?.id as string
-
 
         if (event.httpMethod === 'PUT') {
             console.log(`PUT /products/${productId}`)
