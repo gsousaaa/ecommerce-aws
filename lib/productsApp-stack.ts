@@ -36,13 +36,9 @@ export class ProductsAppStack extends cdk.Stack {
             runtime: lambda.Runtime.NODEJS_22_X,
             tracing: lambda.Tracing.ACTIVE,
             memorySize: 512,
-            timeout: cdk.Duration.seconds(5),
             bundling: {
                 minify: true,
                 sourceMap: false,
-                nodeModules: [
-                    'aws-xray-sdk-core'
-                ]
             },
             environment: {
                 PRODUCTS_DDB: this.productsDdb.tableName
@@ -59,13 +55,9 @@ export class ProductsAppStack extends cdk.Stack {
             runtime: lambda.Runtime.NODEJS_22_X,
             tracing: lambda.Tracing.ACTIVE,
             memorySize: 512,
-            timeout: cdk.Duration.seconds(5),
             bundling: {
                 minify: true,
                 sourceMap: false,
-                nodeModules: [
-                    'aws-xray-sdk-core'
-                ]
             },
             environment: {
                 PRODUCTS_DDB: this.productsDdb.tableName
