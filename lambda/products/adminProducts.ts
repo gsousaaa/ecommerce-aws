@@ -2,9 +2,6 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda
 import { Product, ProductRepository } from "/opt/nodejs/productsLayer";
 import { DynamoDB, Lambda } from "aws-sdk"
 import { ProductEvent, ProductEventType } from "/opt/nodejs/productsEventsLayer";
-import * as AWSXray from "aws-xray-sdk"
-
-AWSXray.captureAWS(require('aws-sdk'))
 
 const productsDdb = process.env.PRODUCTS_DDB!
 const productEventsFunctionname = process.env.PRODUCT_EVENT_FUNCTION_NAME!
@@ -101,6 +98,6 @@ const sendProductEvent = (product: Product, eventType: ProductEventType, email: 
     return lambdaClient.invoke({
         FunctionName: productEventsFunctionname,
         Payload: JSON.stringify(event),
-        InvocationType: 'RequestResponse'
+        InvocationType: 'Event'
     }).promise()
 }   

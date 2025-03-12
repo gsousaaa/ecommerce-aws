@@ -47,9 +47,6 @@ export class ProductsAppStack extends cdk.Stack {
             bundling: {
                 minify: true,
                 sourceMap: false,
-                nodeModules: [
-                    'aws-xray-sdk-core'
-                ]
             },
             environment: {
                 EVENTS_DDB: props.eventsDdb.tableName
@@ -70,9 +67,6 @@ export class ProductsAppStack extends cdk.Stack {
             bundling: {
                 minify: true,
                 sourceMap: false,
-                nodeModules: [
-                    'aws-xray-sdk-core'
-                ]
             },
             environment: {
                 PRODUCTS_DDB: this.productsDdb.tableName
@@ -93,9 +87,6 @@ export class ProductsAppStack extends cdk.Stack {
             bundling: {
                 minify: true,
                 sourceMap: false,
-                nodeModules: [
-                    'aws-xray-sdk-core'
-                ]
             },
             environment: {
                 PRODUCTS_DDB: this.productsDdb.tableName,
