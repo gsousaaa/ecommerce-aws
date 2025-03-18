@@ -30,6 +30,9 @@
       ],
       "/opt/nodejs/productsEventsLayer": [
         "lambda/products/layers/productEventsLayer/nodejs/productEvent.ts"
+      ],
+      "/opt/nodejs/ordersLayer": [
+        "lambda/orders/layers/ordersLayer/nodejs/ordersRepository.ts"
       ]
     }
   },
