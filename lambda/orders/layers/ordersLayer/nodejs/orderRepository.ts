@@ -1,5 +1,6 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb"
 import { v4 } from "uuid"
+import { CarrierType, PaymentType, ShippingType } from "/opt/nodejs/ordersApiLayer"
 
 export interface OrderProduct {
     code: string,
@@ -9,12 +10,12 @@ export interface OrderProduct {
 export interface Order {
     pk: string,
     sk?: string,
-    shipping: { type: "URGENT" | "ECONOMIC", carrier: "CORREIOS" | "FEDEX" },
+    shipping: { type: ShippingType, carrier: CarrierType},
     createdAt?: number,
     products: OrderProduct[],
     billing: {
         totalPrice: number,
-        payment: "CASH" | "DEBIT_CARD" | "CREDIT_CARD"
+        payment: PaymentType
     }
 }
 
