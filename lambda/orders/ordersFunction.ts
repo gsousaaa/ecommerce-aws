@@ -1,12 +1,16 @@
-import { DynamoDB } from "aws-sdk"
+import { DynamoDB, SNS } from "aws-sdk"
 import { Order, OrderProduct, OrderRepository } from "./layers/ordersLayer/nodejs/orderRepository"
 import { Product, ProductRepository } from "/opt/nodejs/productsLayer"
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { OrderModelRequest, OrderModelResponse, OrderProductResponse } from "/opt/nodejs/ordersApiLayer";
+import { OrderEvent, OrderEventType, Envelope } from "./layers/orderEventsLayer/nodejs/orderEvents";
 
 const ordersDdb = process.env.ORDERS_DDB!
 const productsDdb = process.env.PRODUCTS_DDB!
+const orderEventsTopicArn = process.env.ORDER_EVENTS_TOPIC_ARN!
+
 const ddbClient = new DynamoDB.DocumentClient()
+const snsClient = new SNS()
 
 const orderRepository = new OrderRepository(ddbClient, ordersDdb)
 const productRepository = new ProductRepository(ddbClient, productsDdb)
@@ -31,6 +35,11 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
             const order = buildOrder(orderRequest, products)
             const createdOrder = await orderRepository.createOrder(order)
+
+            const eventResult = await sendOrderEvent(createdOrder, OrderEventType.CREATED, lambdaRequestId)
+
+            console.log(`Order created - OrderId: ${createdOrder.sk}
+                - MessageId: ${eventResult.MessageId}`)
 
             return {
                 statusCode: 201,
@@ -60,7 +69,6 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
                         }
                     }
 
-
                     const orders = await orderRepository.getOrdersByEmail(email)
                     return {
                         statusCode: 200,
@@ -81,6 +89,11 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
                 const orderId = event.queryStringParameters?.orderId!
                 const deletedOrder = await orderRepository.deleteOrder(email, orderId)
 
+                const eventResult = await sendOrderEvent(deletedOrder, OrderEventType.DELETED, lambdaRequestId)
+
+                console.log(`Order created - OrderId: ${deletedOrder.sk}
+                    - MessageId: ${eventResult.MessageId}`)
+
                 return {
                     statusCode: 200,
                     body: JSON.stringify(convertToOrderResponse(deletedOrder))
@@ -92,13 +105,38 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
                     body: (<Error>error).message
                 }
             }
-
         default:
             return {
                 statusCode: 400,
                 body: JSON.stringify({ message: 'Bad Request' })
             }
     }
+}
+
+const sendOrderEvent = (order: Order, eventType: OrderEventType, lambdaRequestId: string) => {
+    const productCodes = order.products.map((order) => order.code)
+
+    const orderEvent: OrderEvent = {
+        billing: order.billing,
+        email: order.pk,
+        orderId: order.sk!,
+        productCodes: productCodes,
+        requestId: lambdaRequestId,
+        shipping: {
+            carrier: order.shipping.carrier,
+            type: order.shipping.type
+        }
+    }
+
+    const envelope: Envelope = {
+        eventType,
+        data: JSON.stringify(orderEvent)
+    }
+
+    return snsClient.publish({
+        TopicArn: orderEventsTopicArn,
+        Message: JSON.stringify(envelope)
+    }).promise()
 }
 
 const convertToOrderResponse = (order: Order) => {
