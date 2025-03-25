@@ -45,7 +45,7 @@ export class ECommerceApiStack extends cdk.Stack {
         const ordersResource = api.root.addResource('orders')
 
         // Validador de requisição (apenas para DELETE)
-        const deleteOrderValidator = new apigateway.RequestValidator(this, 'DeleteRequestValidator', {
+        const deleteOrderValidator = new apigateway.RequestValidator(this, 'DeleteOrderRequestValidator', {
             restApi: api,
             validateRequestParameters: true,
         });
@@ -64,7 +64,48 @@ export class ECommerceApiStack extends cdk.Stack {
             requestValidator: deleteOrderValidator
         })
         // POST /orders
-        ordersResource.addMethod('POST', ordersIntegration)
+        const postOrderValidator = new apigateway.RequestValidator(this, 'PostOrderRequestValidator', {
+            restApi: api,
+            requestValidatorName: 'PostOrderRequestValidator',
+            validateRequestBody: true
+        })
+
+        const orderRequestModel = new apigateway.Model(this, 'OrderRequestModel', {
+            modelName: 'OrderRequestModel', restApi: api, schema: {
+                type: apigateway.JsonSchemaType.OBJECT,
+                properties: {
+                    email: {
+                        type: apigateway.JsonSchemaType.STRING,
+                    },
+                    productIds: {
+                        type: apigateway.JsonSchemaType.ARRAY,
+                        minItems: 1,
+                        items: {
+                            type: apigateway.JsonSchemaType.STRING
+                        }
+                    },
+                    paymentType: {
+                        type: apigateway.JsonSchemaType.STRING,
+                        enum: ['CASH', 'CREDIT_CARD', 'DEBIT_CARD']
+                    },
+                    carrierType: {
+                        type: apigateway.JsonSchemaType.STRING,
+                        enum: ['CORREIOS', 'FEDEX']
+                    },
+                    shippingType: {
+                        type: apigateway.JsonSchemaType.STRING,
+                        enum: ['URGENT', 'ECONOMIX']
+                    }
+
+                },
+                required: ['email', 'productIds', 'paymentType', 'carrierType', 'shippingType']
+            }
+        })
+        ordersResource.addMethod('POST', ordersIntegration, {
+            requestValidator: postOrderValidator, requestModels: {
+                "application/json": orderRequestModel
+            }
+        })
     }
 
     private productsService(props: ECommerceApiStackProps, api: apigateway.RestApi) {
@@ -81,10 +122,41 @@ export class ECommerceApiStack extends cdk.Stack {
         const adminProductsIntegration = new apigateway.LambdaIntegration(props.adminProductsHandler)
 
         //POST /products
-        productsResource.addMethod('POST', adminProductsIntegration)
+        const postProductValidator = new apigateway.RequestValidator(this, 'PostProductValidator', {
+            restApi: api,
+            requestValidatorName: 'PostProductValidator',
+            validateRequestBody: true
+        })
+
+        const productRequestModel = new apigateway.Model(this, 'ProductRequestModel', {
+            restApi: api,
+            modelName: 'ProductRequestModel',
+            schema: {
+                type: apigateway.JsonSchemaType.OBJECT,
+                properties: {
+                    model: { type: apigateway.JsonSchemaType.STRING },
+                    code: { type: apigateway.JsonSchemaType.STRING },
+                    price: { type: apigateway.JsonSchemaType.NUMBER },
+                    productName: { type: apigateway.JsonSchemaType.STRING },
+                    productUrl: { type: apigateway.JsonSchemaType.STRING },
+                },
+                required: ['model', 'code', 'price', 'productName', 'productUrl']
+            }
+        })
+        productsResource.addMethod('POST', adminProductsIntegration, {requestValidator: postProductValidator, requestModels: {
+            'application/json': productRequestModel
+        } })
 
         // PUT /products/{id}
-        productIdResource.addMethod('PUT', adminProductsIntegration)
+        const updateProductValidator = new apigateway.RequestValidator(this, 'UpdateProductValidator', {
+            restApi: api,
+            requestValidatorName: 'UpdateProductValidator',
+            validateRequestBody: true
+        })
+
+        productIdResource.addMethod('PUT', adminProductsIntegration, {requestValidator: updateProductValidator, requestModels: {
+            'application/json': productRequestModel
+        }})
 
         // DELETE /products/{id}
         productIdResource.addMethod('DELETE', adminProductsIntegration)
