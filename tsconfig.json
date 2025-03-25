@@ -38,7 +38,10 @@
         "lambda/orders/layers/ordersApiLayer/nodejs/orderApi.ts"
       ],
       "/opt/nodejs/orderEventsLayer": [
-        "lambda/orders/layers/ordersApiLayer/nodejs/orderEventsLayer.ts"
+        "lambda/orders/layers/orderEventsLayer/nodejs/orderEvents.ts"
+      ],
+      "/opt/nodejs/orderEventsRepositoryLayer": [
+        "lambda/orders/layers/orderEventsRepositoryLayer/nodejs/orderEventsRepository.ts"
       ]
     }
   },

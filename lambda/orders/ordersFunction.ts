@@ -3,7 +3,7 @@ import { Order, OrderProduct, OrderRepository } from "./layers/ordersLayer/nodej
 import { Product, ProductRepository } from "/opt/nodejs/productsLayer"
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { OrderModelRequest, OrderModelResponse, OrderProductResponse } from "/opt/nodejs/ordersApiLayer";
-import { OrderEvent, OrderEventType, Envelope } from "./layers/orderEventsLayer/nodejs/orderEvents";
+import { OrderEvent, Envelope, OrderEventType } from "/opt/nodejs/orderEventsLayer";
 
 const ordersDdb = process.env.ORDERS_DDB!
 const productsDdb = process.env.PRODUCTS_DDB!
