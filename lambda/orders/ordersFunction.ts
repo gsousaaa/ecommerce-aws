@@ -4,6 +4,7 @@ import { Product, ProductRepository } from "/opt/nodejs/productsLayer"
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from "aws-lambda";
 import { OrderModelRequest, OrderModelResponse, OrderProductResponse } from "/opt/nodejs/ordersApiLayer";
 import { OrderEvent, Envelope, OrderEventType } from "/opt/nodejs/orderEventsLayer";
+import { v4 } from "uuid"
 
 const ordersDdb = process.env.ORDERS_DDB!
 const productsDdb = process.env.PRODUCTS_DDB!
@@ -34,16 +35,18 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
             }
 
             const order = buildOrder(orderRequest, products)
-            const createdOrder = await orderRepository.createOrder(order)
+            
+            const createdOrderPromise =  orderRepository.createOrder(order)
+            const eventResultPromise =  sendOrderEvent(order, OrderEventType.CREATED, lambdaRequestId)
 
-            const eventResult = await sendOrderEvent(createdOrder, OrderEventType.CREATED, lambdaRequestId)
+            const promisesResults = await Promise.all([createdOrderPromise, eventResultPromise])
 
-            console.log(`Order created - OrderId: ${createdOrder.sk}
-                - MessageId: ${eventResult.MessageId}`)
+            console.log(`Order created - OrderId: ${promisesResults[0].sk}
+                - MessageId: ${promisesResults[1].MessageId}`)
 
             return {
                 statusCode: 201,
-                body: JSON.stringify(convertToOrderResponse(createdOrder))
+                body: JSON.stringify(convertToOrderResponse(promisesResults[0]))
             }
 
         case (method === 'GET'):
@@ -170,6 +173,8 @@ const buildOrder = (orderRequest: OrderModelRequest, products: Product[]): Order
 
     const order: Order = {
         pk: orderRequest.email,
+        sk: v4(),
+        createdAt: Date.now(),
         billing: { totalPrice, payment: orderRequest.paymentType },
         products: orderProducts,
         shipping: {

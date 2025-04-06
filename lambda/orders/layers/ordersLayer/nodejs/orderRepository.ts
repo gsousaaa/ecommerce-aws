@@ -1,5 +1,5 @@
 import { DocumentClient } from "aws-sdk/clients/dynamodb"
-import { v4 } from "uuid"
+
 import { CarrierType, PaymentType, ShippingType } from "/opt/nodejs/ordersApiLayer"
 
 export interface OrderProduct {
@@ -9,9 +9,9 @@ export interface OrderProduct {
 
 export interface Order {
     pk: string,
-    sk?: string,
+    sk: string,
     shipping: { type: ShippingType, carrier: CarrierType},
-    createdAt?: number,
+    createdAt: number,
     products: OrderProduct[],
     billing: {
         totalPrice: number,
@@ -29,8 +29,6 @@ export class OrderRepository {
     }
 
     async createOrder(order: Order): Promise<Order> {
-        order.sk = v4()
-        order.createdAt = Date.now()
         await this.ddbClient.put({
             TableName: this.ordersDdb,
             Item: order
