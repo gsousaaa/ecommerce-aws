@@ -4,6 +4,8 @@ import * as cdk from 'aws-cdk-lib'
 import * as dynamoDB from 'aws-cdk-lib/aws-dynamodb'
 import * as ssm from 'aws-cdk-lib/aws-ssm'
 import * as sns from 'aws-cdk-lib/aws-sns'
+import * as sqs from 'aws-cdk-lib/aws-sqs'
+import * as lambdaEventSource from "aws-cdk-lib/aws-lambda-event-sources"
 import * as subs from 'aws-cdk-lib/aws-sns-subscriptions'
 import * as iam from 'aws-cdk-lib/aws-iam'
 import { Construct } from 'constructs'
@@ -126,5 +128,12 @@ export class OrderAppStack extends cdk.Stack {
                 allowlist: ['ORDER_CREATED']
             })
         }}))
+
+        const orderEventsQueue = new sqs.Queue(this, 'OrderEventsQueue', {
+            queueName: 'order-events'
+        })
+
+        ordersTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue))
+
     }
 }
