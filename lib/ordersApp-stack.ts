@@ -130,7 +130,9 @@ export class OrderAppStack extends cdk.Stack {
         }}))
 
         const orderEventsQueue = new sqs.Queue(this, 'OrderEventsQueue', {
-            queueName: 'order-events'
+            queueName: 'order-events',
+            enforceSSL: false,
+            encryption: sqs.QueueEncryption.UNENCRYPTED,
         })
 
         ordersTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue))
