@@ -77,7 +77,7 @@ export class OrderAppStack extends cdk.Stack {
         ordersDdb.grantReadWriteData(this.ordersHandler)
         props.productsDdb.grantReadData(this.ordersHandler)
         ordersTopic.grantPublish(this.ordersHandler)
- 
+
         this.orderEventsHandler = new lambdaNodejs.NodejsFunction(this, 'OrderEventsFunction', {
             functionName: 'OrderEventsFunction',
             memorySize: 512,
@@ -88,7 +88,7 @@ export class OrderAppStack extends cdk.Stack {
             },
             runtime: lambda.Runtime.NODEJS_20_X,
             environment: {
-               EVENTS_DDB: props.eventsDdb.tableName
+                EVENTS_DDB: props.eventsDdb.tableName
 
             },
             layers: [orderEventsLayer, orderEventsRepositoryLayer],
@@ -123,11 +123,13 @@ export class OrderAppStack extends cdk.Stack {
             insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0
         })
 
-        ordersTopic.addSubscription(new subs.LambdaSubscription(billingHandler, {filterPolicy: {
-            eventType: sns.SubscriptionFilter.stringFilter({
-                allowlist: ['ORDER_CREATED']
-            })
-        }}))
+        ordersTopic.addSubscription(new subs.LambdaSubscription(billingHandler, {
+            filterPolicy: {
+                eventType: sns.SubscriptionFilter.stringFilter({
+                    allowlist: ['ORDER_CREATED']
+                })
+            }
+        }))
 
         const orderEventsQueue = new sqs.Queue(this, 'OrderEventsQueue', {
             queueName: 'order-events',
@@ -135,7 +137,33 @@ export class OrderAppStack extends cdk.Stack {
             encryption: sqs.QueueEncryption.UNENCRYPTED,
         })
 
-        ordersTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue))
+        ordersTopic.addSubscription(new subs.SqsSubscription(orderEventsQueue, {
+            filterPolicy: {
+                eventType: sns.SubscriptionFilter.stringFilter({
+                    allowlist: ['ORDER_CREATED']
+                })
+            }
+        }))
 
+        const orderEmailsHandler = new lambdaNodejs.NodejsFunction(this, 'OrderEmailsFunction', {
+            functionName: 'OrderEmailsFunction',
+            memorySize: 512,
+            entry: 'lambda/orders/orderEmailsFunction.ts',
+            bundling: {
+                minify: true,
+                sourceMap: false
+            },
+            layers: [orderEventsLayer],
+            environment: {
+                EVENTS_DDB: props.eventsDdb.tableName
+
+            },
+            runtime: lambda.Runtime.NODEJS_20_X,
+            tracing: lambda.Tracing.ACTIVE,
+            insightsVersion: lambda.LambdaInsightsVersion.VERSION_1_0_119_0
+        })
+
+        orderEmailsHandler.addEventSource(new lambdaEventSource.SqsEventSource(orderEventsQueue))
+        orderEventsQueue.grantConsumeMessages(orderEmailsHandler)
     }
 }
